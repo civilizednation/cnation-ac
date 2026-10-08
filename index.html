@@ -210,8 +210,8 @@
         <div class="label">WebM 음질</div>
         <div class="seg" id="bitrates">
           <button data-kbps="32">32k<small>초경량</small></button>
-          <button data-kbps="48">48k<small>기본</small></button>
-          <button data-kbps="64">64k<small>균형</small></button>
+          <button data-kbps="48">48k<small>경량</small></button>
+          <button data-kbps="64">64k<small>기본</small></button>
           <button data-kbps="96">96k<small>고음질</small></button>
           <button data-kbps="128">128k<small>최고</small></button>
         </div>
@@ -295,8 +295,8 @@
     const $ = (id) => document.getElementById(id);
     const BITRATES = {
       32: '초경량 · 단순한 곡이나 용량이 가장 중요할 때',
-      48: '모바일 게임 BGM 기본 · 폰 스피커/이어폰에 충분',
-      64: '균형 · 오케스트라처럼 고음이 많은 곡에 추천',
+      48: '경량 · 용량을 더 줄이고 싶을 때 (고음에서 약간의 잡음)',
+      64: '모바일 게임 BGM 기본 · 잡음 없이 깔끔한 음질 · 권장',
       96: '고음질 · 원본과 구분하기 어려움',
       128: '최고 음질 · 용량 절감 효과는 작음'
     };
@@ -304,7 +304,7 @@
     const ICON_PAUSE = '<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>';
     const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
-    let kbps = 48;
+    let kbps = 64;
     let items = [];
     let converting = false;
 
