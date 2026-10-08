@@ -72,8 +72,9 @@
     .btn:disabled { opacity: .4; }
 
     .label { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
-    .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; background: #eef3f7; border-radius: 14px; }
-    .seg button { height: 40px; border-radius: 10px; font-size: 14px; font-weight: 700; color: var(--muted); }
+    .seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; background: #eef3f7; border-radius: 14px; }
+    .seg button { height: 50px; padding: 0; border-radius: 10px; font-size: 14px; font-weight: 700; color: var(--muted); line-height: 1.15; }
+    .seg button small { display: block; font-size: 10.5px; font-weight: 600; opacity: .8; }
     .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(18, 32, 47, .12); }
     .hint { margin: 8px 2px 0; font-size: 12.5px; color: var(--muted); }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
@@ -165,10 +166,11 @@
       <section class="card">
         <div class="label">WebM 음질</div>
         <div class="seg" id="bitrates">
-          <button data-kbps="64">64k</button>
-          <button data-kbps="96">96k</button>
-          <button data-kbps="128">128k</button>
-          <button data-kbps="160">160k</button>
+          <button data-kbps="32">32k<small>초경량</small></button>
+          <button data-kbps="48">48k<small>기본</small></button>
+          <button data-kbps="64">64k<small>균형</small></button>
+          <button data-kbps="96">96k<small>고음질</small></button>
+          <button data-kbps="128">128k<small>최고</small></button>
         </div>
         <p class="hint" id="br-hint"></p>
         <div class="actions">
@@ -228,16 +230,17 @@
 
     const $ = (id) => document.getElementById(id);
     const BITRATES = {
-      64: '용량 우선 · 가벼운 감상용',
-      96: '원본과 구분하기 어려운 음질 · 권장',
-      128: '고음질 · 대부분 원본과 동일하게 들림',
-      160: '최고 음질 · 용량 절감 효과는 작음'
+      32: '초경량 · 단순한 곡이나 용량이 가장 중요할 때',
+      48: '모바일 게임 BGM 기본 · 폰 스피커/이어폰에 충분',
+      64: '균형 · 오케스트라처럼 고음이 많은 곡에 추천',
+      96: '고음질 · 원본과 구분하기 어려움',
+      128: '최고 음질 · 용량 절감 효과는 작음'
     };
     const ICON_PLAY = '<path d="M8 5.5v13a1 1 0 001.5.86l10.5-6.5a1 1 0 000-1.72L9.5 4.64A1 1 0 008 5.5z"/>';
     const ICON_PAUSE = '<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>';
     const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
-    let kbps = 96;
+    let kbps = 48;
     let items = [];
     let converting = false;
 
