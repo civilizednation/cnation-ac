@@ -7,9 +7,9 @@
   <meta name="description" content="MP3를 고효율 WebM(Opus)으로 일괄 변환하고 원본과 바로 비교해 들어보세요.">
   <meta property="og:title" content="cnation Audio Compressor">
   <meta property="og:description" content="MP3 → WebM(Opus) 일괄 변환 · 원본 비교 듣기">
-  <meta name="theme-color" content="#f3f8fb">
+  <meta name="theme-color" content="#0e131c">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="cnation A/C">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -18,31 +18,34 @@
   <script src="vendor/jszip.min.js"></script>
   <style>
     :root {
-      --bg: #f3f8fb;
-      --card: #ffffff;
-      --line: #e3ebf2;
-      --text: #12202f;
-      --muted: #6b7b8c;
-      --accent: #10b3a3;
-      --accent-dark: #0b978a;
-      --accent-soft: #e3f7f4;
-      --orig: #ff7a59;
-      --orig-soft: #fff0eb;
-      --danger: #e5484d;
+      --bg: #0e131c;
+      --card: #171e2b;
+      --card-2: #1e2737;
+      --line: #273247;
+      --text: #eef2f8;
+      --muted: #8b97ab;
+      --accent: #f5b942;
+      --accent-dark: #e09f22;
+      --accent-ink: #2a1c00;
+      --accent-soft: rgba(245, 185, 66, .14);
+      --orig: #5fb4ff;
+      --orig-soft: rgba(95, 180, 255, .14);
+      --danger: #ff6b6b;
       --radius: 18px;
-      --shadow: 0 1px 2px rgba(18, 32, 47, .04), 0 8px 24px rgba(18, 32, 47, .06);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .25), 0 10px 30px rgba(0, 0, 0, .25);
     }
     * { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
+    html { -webkit-text-size-adjust: 100%; background: var(--bg); }
     body {
       margin: 0;
       min-height: 100vh;
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       color: var(--text);
       background:
-        radial-gradient(1200px 500px at 10% -10%, #dff6f1 0%, transparent 60%),
-        radial-gradient(900px 500px at 110% 0%, #e2efff 0%, transparent 55%),
+        radial-gradient(900px 420px at 0% -10%, rgba(245, 185, 66, .13) 0%, transparent 60%),
+        radial-gradient(800px 480px at 110% 0%, rgba(95, 180, 255, .10) 0%, transparent 55%),
         var(--bg);
+      background-attachment: fixed;
       -webkit-tap-highlight-color: transparent;
       word-break: keep-all;
     }
@@ -53,93 +56,133 @@
     .wrap { max-width: 680px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
 
     header { display: flex; align-items: center; gap: 12px; padding: 4px 2px 18px; }
-    header img { width: 44px; height: 44px; border-radius: 12px; box-shadow: var(--shadow); }
+    header img { width: 46px; height: 46px; border-radius: 12px; box-shadow: 0 0 0 1px rgba(245, 185, 66, .25), 0 6px 18px rgba(245, 185, 66, .18); }
     header h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
+    header h1 em { font-style: normal; color: var(--accent); }
     header p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 
     .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
 
-    .drop { text-align: center; padding: 28px 18px; border: 2px dashed #cfe3ea; background: rgba(255, 255, 255, .7); transition: border-color .15s, background .15s; }
+    .drop { text-align: center; padding: 28px 18px; border: 2px dashed #34405a; background: rgba(23, 30, 43, .7); transition: border-color .15s, background .15s; }
     .drop.over { border-color: var(--accent); background: var(--accent-soft); }
     .drop p { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 20px; border-radius: 14px; font-size: 15px; font-weight: 700; transition: background .15s, opacity .15s, transform .05s; }
     .btn:active:not(:disabled) { transform: scale(.98); }
     .btn svg { width: 18px; height: 18px; }
-    .btn.primary { background: var(--accent); color: #fff; }
-    .btn.primary:hover:not(:disabled) { background: var(--accent-dark); }
-    .btn.soft { background: var(--accent-soft); color: var(--accent-dark); }
-    .btn:disabled { opacity: .4; }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.primary:hover:not(:disabled) { background: #ffc85e; }
+    .btn.soft { background: var(--card-2); color: var(--text); border: 1px solid var(--line); }
+    .btn.soft:hover:not(:disabled) { border-color: #3a4864; }
+    .btn:disabled { opacity: .35; }
 
     .label { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
-    .seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; background: #eef3f7; border-radius: 14px; }
+    .seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; background: #0f1520; border: 1px solid var(--line); border-radius: 14px; }
     .seg button { height: 50px; padding: 0; border-radius: 10px; font-size: 14px; font-weight: 700; color: var(--muted); line-height: 1.15; }
     .seg button small { display: block; font-size: 10.5px; font-weight: 600; opacity: .8; }
-    .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(18, 32, 47, .12); }
+    .seg button.on { background: var(--accent); color: var(--accent-ink); }
     .hint { margin: 8px 2px 0; font-size: 12.5px; color: var(--muted); }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
 
     .progress { margin-top: 14px; }
-    .progress .track { height: 8px; border-radius: 99px; background: #eef3f7; overflow: hidden; }
-    .progress .bar { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #34d3c0, var(--accent)); transition: width .2s; }
+    .progress .track { height: 8px; border-radius: 99px; background: #0f1520; overflow: hidden; }
+    .progress .bar { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #ffd27a, var(--accent)); transition: width .2s; }
     .progress .ptext { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
     .progress .ptext span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .list-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
     .list-head h2 { margin: 0; font-size: 15px; font-weight: 800; }
-    .list-head h2 span { color: var(--accent); margin-left: 2px; }
+    .list-head h2 span { color: var(--accent); margin-left: 4px; }
     .link { font-size: 13px; color: var(--muted); padding: 6px 4px; }
     .link:hover { color: var(--danger); }
     .empty { margin: 14px 0 4px; text-align: center; font-size: 13px; color: var(--muted); }
 
     .item { padding: 12px 0; border-top: 1px solid var(--line); }
     .item:first-child { border-top: 0; }
-    .item.active .name { color: var(--accent-dark); }
+    .item.active .name { color: var(--accent); }
     .item-top { display: flex; align-items: center; gap: 8px; }
     .name { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .x { width: 30px; height: 30px; border-radius: 8px; color: #a3b1bf; display: grid; place-items: center; flex-shrink: 0; }
-    .x:hover { color: var(--danger); background: #fdecec; }
+    .x { width: 30px; height: 30px; border-radius: 8px; color: #6d7a90; display: grid; place-items: center; flex-shrink: 0; }
+    .x:hover { color: var(--danger); background: rgba(255, 107, 107, .12); }
     .x svg { width: 16px; height: 16px; }
     .meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .badge { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #eef3f7; color: var(--muted); }
-    .badge.ok { background: var(--accent-soft); color: var(--accent-dark); }
-    .badge.err { background: #fdecec; color: var(--danger); }
-    .badge.run { background: #e8f1ff; color: #2f6fe0; }
-    .mini { height: 4px; border-radius: 99px; background: #eef3f7; overflow: hidden; margin-top: 8px; }
+    .badge { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--card-2); color: var(--muted); }
+    .badge.ok { background: rgba(74, 222, 128, .14); color: #6ee79a; }
+    .badge.err { background: rgba(255, 107, 107, .14); color: var(--danger); }
+    .badge.run { background: var(--accent-soft); color: var(--accent); }
+    .mini { height: 4px; border-radius: 99px; background: #0f1520; overflow: hidden; margin-top: 8px; }
     .mini div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
     .item-actions { display: flex; gap: 8px; margin-top: 10px; }
     .item-actions .btn { height: 36px; padding: 0 14px; font-size: 13.5px; border-radius: 10px; }
     .item-actions .btn svg { width: 16px; height: 16px; }
 
-    .player { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); border-color: #cdeee8; box-shadow: 0 12px 40px rgba(18, 32, 47, .14); }
+    /* ---- Compare player ---- */
+    .player { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); background: #182131; border-color: #35425c; box-shadow: 0 -4px 30px rgba(0, 0, 0, .45); }
     .pl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
     .pl-head h2 { margin: 0; font-size: 15px; font-weight: 800; flex-shrink: 0; }
     .pl-head span { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ab { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .ab button { padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); text-align: left; background: #fff; transition: border-color .12s, background .12s; }
-    .ab button b { display: block; font-size: 15px; }
-    .ab button small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .ab button[data-src="orig"].on { border-color: var(--orig); background: var(--orig-soft); }
-    .ab button[data-src="orig"].on b { color: #e0552f; }
-    .ab button[data-src="conv"].on { border-color: var(--accent); background: var(--accent-soft); }
-    .ab button[data-src="conv"].on b { color: var(--accent-dark); }
 
-    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; margin: 12px 0 0; background: transparent; --p: 0%; }
-    input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 99px; background: linear-gradient(90deg, var(--accent) var(--p), #e6edf3 var(--p)); }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
-    input[type=range]::-moz-range-track { height: 6px; border-radius: 99px; background: #e6edf3; }
+    .now { --c: var(--muted); --soft: var(--card-2); display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--soft); border: 2px solid var(--c); transition: background .15s, border-color .15s; }
+    .now.idle { border-color: var(--line); }
+    .now.orig { --c: var(--orig); --soft: var(--orig-soft); }
+    .now.conv { --c: var(--accent); --soft: var(--accent-soft); }
+    .now .eq { display: flex; align-items: flex-end; gap: 3px; width: 22px; height: 22px; flex-shrink: 0; }
+    .now .eq i { flex: 1; height: 30%; border-radius: 2px; background: var(--c); }
+    .now.playing .eq i { animation: eq .9s ease-in-out infinite; }
+    .now.playing .eq i:nth-child(2) { animation-delay: -.3s; }
+    .now.playing .eq i:nth-child(3) { animation-delay: -.6s; }
+    @keyframes eq { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+    .now-text { flex: 1; min-width: 0; }
+    .now-text small { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+    .now-text b { display: block; font-size: 20px; font-weight: 800; color: var(--c); line-height: 1.25; }
+    .now.idle .now-text b { color: var(--text); }
+    .now-side { text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .now-side b { display: block; font-size: 15px; color: var(--text); }
+    .seg-bar { height: 4px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-top: 8px; }
+    .seg-bar div { height: 100%; width: 0; background: var(--accent); }
+    .seg-bar.orig div { background: var(--orig); }
+
+    .ab { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .ab button { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); text-align: left; background: var(--card-2); transition: border-color .12s, background .12s, opacity .12s; }
+    .ab button b { display: block; font-size: 14px; }
+    .ab button small { display: block; margin-top: 1px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ab button[data-src="orig"] b { color: var(--orig); }
+    .ab button[data-src="conv"] b { color: var(--accent); }
+    .ab button[data-src="orig"].on { border-color: var(--orig); background: var(--orig-soft); }
+    .ab button[data-src="conv"].on { border-color: var(--accent); background: var(--accent-soft); }
+    .ab.locked button { opacity: .55; pointer-events: none; }
+
+    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; margin: 10px 0 0; background: transparent; --p: 0%; --rs: 0%; --re: 0%; }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 6px; border-radius: 99px;
+      background:
+        linear-gradient(90deg, var(--accent) var(--p), transparent var(--p)),
+        linear-gradient(90deg, transparent var(--rs), rgba(255, 255, 255, .35) var(--rs), rgba(255, 255, 255, .35) var(--re), transparent var(--re)),
+        #2a3549;
+    }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, .4); }
+    input[type=range]::-moz-range-track { height: 6px; border-radius: 99px; background: #2a3549; }
     input[type=range]::-moz-range-progress { height: 6px; border-radius: 99px; background: var(--accent); }
-    input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
+    input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); }
     .times { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .pl-ctrl { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 4px; }
-    .icon-btn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: #9aa9b8; }
+    .pl-ctrl { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 2px; }
+    .icon-btn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: #6d7a90; }
     .icon-btn svg { width: 20px; height: 20px; }
     .icon-btn.on { color: var(--accent); background: var(--accent-soft); }
-    .play { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(16, 179, 163, .35); }
-    .play:disabled { opacity: .5; }
+    .play { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 18px rgba(245, 185, 66, .3); }
+    .play:disabled { opacity: .4; }
     .play svg { width: 24px; height: 24px; }
 
-    #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: #12202f; color: #fff; font-size: 13.5px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
+    .alt { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .alt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .alt-head b { font-size: 14px; }
+    .alt-head span { font-size: 12px; color: var(--muted); }
+    .alt-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    .alt-btns button { height: 42px; border-radius: 12px; font-size: 15px; font-weight: 800; background: var(--card-2); border: 1px solid var(--line); }
+    .alt-btns button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .alt-btns button:disabled { opacity: .4; }
+
+    #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: #eef2f8; color: #0e131c; font-size: 13.5px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
     #toast.show { opacity: 1; transform: translate(-50%, 0); }
   </style>
 </head>
@@ -148,7 +191,7 @@
     <header>
       <img src="apple-touch-icon.png" alt="">
       <div>
-        <h1>cnation Audio Compressor</h1>
+        <h1>cnation <em>Audio Compressor</em></h1>
         <p>MP3 → WebM 일괄 변환 · 원본 비교 듣기</p>
       </div>
     </header>
@@ -203,10 +246,22 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </div>
-        <div class="ab">
+
+        <div class="now idle" id="now" aria-live="polite">
+          <div class="eq"><i></i><i></i><i></i></div>
+          <div class="now-text">
+            <small id="now-label">일시정지</small>
+            <b id="now-src">WebM</b>
+          </div>
+          <div class="now-side hidden" id="now-side"><b id="now-round"></b><span id="now-range"></span></div>
+        </div>
+        <div class="seg-bar hidden" id="seg-bar"><div id="seg-fill"></div></div>
+
+        <div class="ab" id="ab">
           <button data-src="orig"><b>원본 MP3</b><small id="ab-orig"></small></button>
           <button data-src="conv" class="on"><b>WebM</b><small id="ab-conv"></small></button>
         </div>
+
         <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="재생 위치">
         <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
         <div class="pl-ctrl">
@@ -217,6 +272,15 @@
             <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 001.5.86l10.5-6.5a1 1 0 000-1.72L9.5 4.64A1 1 0 008 5.5z"/></svg>
           </button>
           <span class="icon-btn" aria-hidden="true"></span>
+        </div>
+
+        <div class="alt">
+          <div class="alt-head"><b>번갈아 듣기</b><span id="alt-hint">시작 위치를 정하고 구간 길이를 누르세요</span></div>
+          <div class="alt-btns" id="alt-btns">
+            <button data-len="3">3초</button>
+            <button data-len="5">5초</button>
+            <button data-len="10">10초</button>
+          </div>
         </div>
       </section>
     </main>
@@ -638,20 +702,31 @@
       updateButtons();
     });
 
-    /* ---------- A/B compare player ---------- */
+    /* ---------- Compare player ---------- */
+    const SRC_NAME = { orig: '원본 MP3', conv: 'WebM' };
     const player = {
       item: null, orig: null, conv: null, duration: 0,
       which: 'conv', playing: false, loop: false,
       offset: 0, startedAt: 0, nodes: null, raf: 0, token: 0
     };
+    // Alternating A/B: same section, original → WebM → original … until stopped.
+    const alt = { on: false, len: 3, start: 0, segs: [], next: 0, n: 0, timer: 0 };
+    const ALT_GAP = 0.25; // short silence between turns so the switch is noticeable
 
     function setPlayIcon(playing) {
       $('play-icon').innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
-      $('play').setAttribute('aria-label', playing ? '일시정지' : '재생');
+      $('play').setAttribute('aria-label', playing ? '정지' : '재생');
     }
 
     function renderAB() {
-      document.querySelectorAll('.ab button').forEach((b) => b.classList.toggle('on', b.dataset.src === player.which));
+      document.querySelectorAll('#ab button').forEach((b) => b.classList.toggle('on', b.dataset.src === player.which));
+    }
+
+    function setNow(src, label, playing) {
+      const now = $('now');
+      now.className = 'now ' + (src || 'idle') + (playing ? ' playing' : '');
+      $('now-src').textContent = SRC_NAME[src || player.which];
+      $('now-label').textContent = label;
     }
 
     function position() {
@@ -691,10 +766,12 @@
 
     function play() {
       if (!player.orig || !player.conv) return;
+      stopAlt();
       if (player.offset >= player.duration - 0.05) player.offset = 0;
       startNodes(player.offset);
       player.playing = true;
       setPlayIcon(true);
+      setNow(player.which, '재생 중', true);
       cancelAnimationFrame(player.raf);
       loopTick();
     }
@@ -705,6 +782,7 @@
       player.playing = false;
       stopNodes();
       setPlayIcon(false);
+      setNow(null, '일시정지 · 여기서 번갈아 듣기 시작', false);
       cancelAnimationFrame(player.raf);
     }
 
@@ -715,8 +793,11 @@
     }
 
     function switchTo(which) {
+      if (alt.on) return;
       player.which = which;
       renderAB();
+      if (player.playing) setNow(which, '재생 중', true);
+      else setNow(null, $('now-label').textContent, false);
       if (player.nodes) {
         const t = ctx.currentTime;
         player.nodes.forEach((n) => {
@@ -727,9 +808,106 @@
       }
     }
 
+    /* --- alternating playback --- */
+    function scheduleAlt() {
+      const ac = ctx;
+      while (alt.next < ac.currentTime + 1.5) {
+        const key = alt.n % 2 === 0 ? 'orig' : 'conv';
+        const t0 = alt.next;
+        const t1 = t0 + alt.len;
+        const src = ac.createBufferSource();
+        const g = ac.createGain();
+        src.buffer = player[key];
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(1, t0 + 0.012);
+        g.gain.setValueAtTime(1, t1 - 0.025);
+        g.gain.linearRampToValueAtTime(0, t1);
+        src.connect(g);
+        g.connect(ac.destination);
+        src.start(t0, alt.start, alt.len);
+        src.stop(t1 + 0.05);
+        alt.segs.push({ key, t0, t1, n: alt.n, src, g });
+        alt.n++;
+        alt.next = t1 + ALT_GAP;
+      }
+      // Drop finished segments.
+      alt.segs = alt.segs.filter((s) => {
+        if (s.t1 < ac.currentTime - 0.5) { s.src.disconnect(); s.g.disconnect(); return false; }
+        return true;
+      });
+    }
+
+    function startAlt(len) {
+      if (!player.orig || !player.conv) return;
+      audioCtx();
+      const start = player.playing ? position() : player.offset;
+      if (player.playing) pause();
+      stopAlt();
+      alt.len = Math.min(len, player.duration);
+      alt.start = Math.max(0, Math.min(start, player.duration - alt.len));
+      alt.n = 0;
+      alt.segs = [];
+      alt.next = ctx.currentTime + 0.08;
+      alt.on = true;
+      scheduleAlt();
+      alt.timer = setInterval(scheduleAlt, 250);
+
+      const seek = $('seek');
+      seek.style.setProperty('--rs', (alt.start / player.duration * 100) + '%');
+      seek.style.setProperty('--re', ((alt.start + alt.len) / player.duration * 100) + '%');
+      document.querySelectorAll('#alt-btns button').forEach((b) => b.classList.toggle('on', Number(b.dataset.len) === len));
+      $('ab').classList.add('locked');
+      $('now-side').classList.remove('hidden');
+      $('seg-bar').classList.remove('hidden');
+      $('now-range').textContent = `${fmtTime(alt.start)}–${fmtTime(alt.start + alt.len)}`;
+      $('alt-hint').textContent = '같은 구간 반복 중 · 다시 누르면 정지';
+      setPlayIcon(true);
+      cancelAnimationFrame(player.raf);
+      altTick();
+    }
+
+    function stopAlt() {
+      if (!alt.on) return;
+      alt.on = false;
+      clearInterval(alt.timer);
+      alt.segs.forEach((s) => { try { s.src.stop(); } catch (e) {} s.src.disconnect(); s.g.disconnect(); });
+      alt.segs = [];
+      player.offset = alt.start;
+      cancelAnimationFrame(player.raf);
+      const seek = $('seek');
+      seek.style.setProperty('--rs', '0%');
+      seek.style.setProperty('--re', '0%');
+      document.querySelectorAll('#alt-btns button').forEach((b) => b.classList.remove('on'));
+      $('ab').classList.remove('locked');
+      $('now-side').classList.add('hidden');
+      $('seg-bar').classList.add('hidden');
+      $('alt-hint').textContent = '시작 위치를 정하고 구간 길이를 누르세요';
+      setPlayIcon(false);
+      setNow(null, '일시정지 · 여기서 번갈아 듣기 시작', false);
+      tick();
+    }
+
+    function altTick() {
+      if (!alt.on) return;
+      const now = ctx.currentTime;
+      // Current segment, or the next one during the short gap.
+      const cur = alt.segs.find((s) => now >= s.t0 && now < s.t1) || alt.segs.find((s) => s.t0 > now);
+      if (cur) {
+        const playingNow = now >= cur.t0;
+        const elapsed = playingNow ? now - cur.t0 : 0;
+        setNow(cur.key, playingNow ? `지금 재생 중 · ${alt.len}초 구간` : '다음 차례', playingNow);
+        $('now-round').textContent = `${Math.floor(cur.n / 2) + 1}회차`;
+        $('seg-bar').classList.toggle('orig', cur.key === 'orig');
+        $('seg-fill').style.width = (elapsed / alt.len * 100) + '%';
+        player.which = cur.key;
+        renderAB();
+        showPos(alt.start + elapsed);
+      }
+      player.raf = requestAnimationFrame(altTick);
+    }
+
     let seeking = false;
-    function tick() {
-      const pos = position();
+    function showPos(pos) {
       $('cur').textContent = fmtTime(pos);
       if (!seeking) {
         const seek = $('seek');
@@ -737,6 +915,7 @@
         seek.style.setProperty('--p', (seek.value / 10) + '%');
       }
     }
+    function tick() { showPos(position()); }
     function loopTick() {
       tick();
       if (player.playing) player.raf = requestAnimationFrame(loopTick);
@@ -747,6 +926,7 @@
       if (!it || it.status !== 'done') return;
       audioCtx(); // unlock within tap
       pause();
+      stopAlt();
       const token = ++player.token;
       Object.assign(player, { item: it, orig: null, conv: null, duration: 0, offset: 0 });
       $('player').classList.remove('hidden');
@@ -756,6 +936,7 @@
       $('cur').textContent = '0:00';
       $('dur').textContent = '…';
       $('play').disabled = true;
+      setNow(null, '불러오는 중…', false);
       renderAB();
       renderList();
 
@@ -782,6 +963,7 @@
 
     function closePlayer() {
       pause();
+      stopAlt();
       player.token++;
       Object.assign(player, { item: null, orig: null, conv: null, duration: 0, offset: 0 });
       $('player').classList.add('hidden');
@@ -790,12 +972,20 @@
 
     $('play').addEventListener('click', () => {
       audioCtx();
+      if (alt.on) return stopAlt();
       player.playing ? pause() : play();
     });
     $('pl-close').addEventListener('click', closePlayer);
-    document.querySelector('.ab').addEventListener('click', (e) => {
+    $('ab').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (b) switchTo(b.dataset.src);
+    });
+    $('alt-btns').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const len = Number(b.dataset.len);
+      if (alt.on && alt.len === Math.min(len, player.duration) && b.classList.contains('on')) stopAlt();
+      else startAlt(len);
     });
     $('loop').addEventListener('click', () => {
       player.loop = !player.loop;
@@ -814,14 +1004,28 @@
     });
     seek.addEventListener('change', () => {
       seeking = false;
-      seekTo((seek.value / 1000) * player.duration);
+      const t = (seek.value / 1000) * player.duration;
+      if (alt.on) {
+        // Move the comparison section to the new spot and keep alternating.
+        const len = alt.len;
+        stopAlt();
+        player.offset = t;
+        startAlt(len);
+      } else {
+        seekTo(t);
+      }
     });
 
     window.addEventListener('keydown', (e) => {
       if (!player.orig || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-      if (e.code === 'Space') { e.preventDefault(); player.playing ? pause() : play(); }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (alt.on) stopAlt(); else player.playing ? pause() : play();
+      }
       if (e.key === 'a' || e.key === 'A') switchTo('orig');
       if (e.key === 'b' || e.key === 'B') switchTo('conv');
+      if (e.key === '3' || e.key === '5') startAlt(Number(e.key));
+      if (e.key === '0') startAlt(10);
     });
 
     renderBitrate();
