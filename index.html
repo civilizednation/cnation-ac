@@ -56,7 +56,7 @@
     .wrap { max-width: 680px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
 
     header { display: flex; align-items: center; gap: 12px; padding: 4px 2px 18px; }
-    header img { width: 46px; height: 46px; border-radius: 12px; box-shadow: 0 0 0 1px rgba(245, 185, 66, .25), 0 6px 18px rgba(245, 185, 66, .18); }
+    header img { width: 52px; height: 52px; margin: -3px; filter: drop-shadow(0 4px 12px rgba(245, 185, 66, .22)); }
     header h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
     header h1 em { font-style: normal; color: var(--accent); }
     header p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
@@ -189,7 +189,7 @@
 <body>
   <div class="wrap">
     <header>
-      <img src="apple-touch-icon.png" alt="">
+      <img src="favicon.png" alt="">
       <div>
         <h1>cnation <em>Audio Compressor</em></h1>
         <p>MP3 → WebM 일괄 변환 · 원본 비교 듣기</p>
