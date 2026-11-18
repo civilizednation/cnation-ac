@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>cnation Audio Compressor</title>
-  <meta name="description" content="MP3를 고효율 WebM(Opus)으로 일괄 변환하고 원본과 바로 비교해 들어보세요.">
+  <meta name="description" content="MP3·WAV·M4A를 고효율 WebM(Opus)으로 일괄 변환하고 원본과 바로 비교해 들어보세요.">
   <meta property="og:title" content="cnation Audio Compressor">
-  <meta property="og:description" content="MP3 → WebM(Opus) 일괄 변환 · 원본 비교 듣기">
+  <meta property="og:description" content="MP3·WAV·M4A → WebM(Opus) 일괄 변환 · 원본 비교 듣기">
   <meta name="theme-color" content="#0e131c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -66,6 +66,7 @@
     .drop { text-align: center; padding: 28px 18px; border: 2px dashed #34405a; background: rgba(23, 30, 43, .7); transition: border-color .15s, background .15s; }
     .drop.over { border-color: var(--accent); background: var(--accent-soft); }
     .drop p { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+    .drop p b { color: var(--text); font-weight: 700; }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 20px; border-radius: 14px; font-size: 15px; font-weight: 700; transition: background .15s, opacity .15s, transform .05s; }
     .btn:active:not(:disabled) { transform: scale(.98); }
@@ -192,18 +193,18 @@
       <img src="favicon.png" alt="">
       <div>
         <h1>cnation <em>Audio Compressor</em></h1>
-        <p>MP3 → WebM 일괄 변환 · 원본 비교 듣기</p>
+        <p>MP3 · WAV · M4A → WebM 변환 · 비교 듣기</p>
       </div>
     </header>
 
     <main>
       <section class="card drop" id="drop">
-        <input type="file" id="file-input" multiple accept="audio/mpeg,audio/mp3,.mp3,audio/*" hidden>
+        <input type="file" id="file-input" multiple accept=".mp3,.wav,.m4a,audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/wave,audio/vnd.wave,audio/mp4,audio/x-m4a,audio/m4a,audio/aac" hidden>
         <button class="btn primary" id="pick">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-          MP3 파일 추가
+          오디오 파일 추가
         </button>
-        <p>여러 파일을 한 번에 선택하거나 여기로 끌어다 놓으세요</p>
+        <p><b>MP3 · WAV · M4A</b> 파일을 여러 개 선택하거나 여기로 끌어다 놓으세요</p>
       </section>
 
       <section class="card">
@@ -258,7 +259,7 @@
         <div class="seg-bar hidden" id="seg-bar"><div id="seg-fill"></div></div>
 
         <div class="ab" id="ab">
-          <button data-src="orig"><b>원본 MP3</b><small id="ab-orig"></small></button>
+          <button data-src="orig"><b id="ab-orig-name">원본</b><small id="ab-orig"></small></button>
           <button data-src="conv" class="on"><b>WebM</b><small id="ab-conv"></small></button>
         </div>
 
@@ -392,20 +393,34 @@
     ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
     drop.addEventListener('drop', (e) => addFiles(Array.from(e.dataTransfer.files || [])));
 
+    // Supported input formats: MP3, WAV, M4A (AAC / ALAC in an MP4 container).
+    const FORMAT_BY_EXT = { mp3: 'MP3', wav: 'WAV', wave: 'WAV', m4a: 'M4A' };
+    const FORMAT_BY_MIME = {
+      'audio/mpeg': 'MP3', 'audio/mp3': 'MP3',
+      'audio/wav': 'WAV', 'audio/x-wav': 'WAV', 'audio/wave': 'WAV', 'audio/vnd.wave': 'WAV',
+      'audio/mp4': 'M4A', 'audio/x-m4a': 'M4A', 'audio/m4a': 'M4A', 'audio/aac': 'M4A'
+    };
+    function formatOf(file) {
+      const ext = (file.name.match(/\.([^.]+)$/) || [])[1];
+      return FORMAT_BY_EXT[(ext || '').toLowerCase()] || FORMAT_BY_MIME[(file.type || '').toLowerCase()] || null;
+    }
+
     function addFiles(files) {
-      const audio = files.filter((f) => /^audio\//.test(f.type) || /\.(mp3|wav|m4a|aac|flac|ogg|oga|opus)$/i.test(f.name));
+      const audio = files.filter((f) => formatOf(f));
+      const skipped = files.length - audio.length;
       let added = 0;
       audio.forEach((file) => {
         if (items.some((it) => it.name === file.name && it.size === file.size)) return;
         items.push({
           id: Math.random().toString(36).slice(2, 10),
-          file, name: file.name, size: file.size,
+          file, name: file.name, size: file.size, format: formatOf(file),
           status: 'ready', progress: 0,
           blob: null, url: null, outName: null, kbps: null, error: null
         });
         added++;
       });
-      if (files.length && !audio.length) toast('오디오 파일만 추가할 수 있어요');
+      if (files.length && !audio.length) toast('MP3 · WAV · M4A 파일만 추가할 수 있어요');
+      else if (added && skipped) toast(`${added}개 추가 · 지원하지 않는 ${skipped}개 제외`);
       else if (added) toast(added + '개 파일을 추가했어요');
       renderList();
     }
@@ -438,11 +453,11 @@
       if (it.status === 'done') {
         const diff = Math.round((1 - it.blob.size / it.size) * 100);
         const label = diff >= 0 ? '-' + diff + '%' : '+' + Math.abs(diff) + '%';
-        return `<span class="badge ok">완료 ${label}</span><span>${fmtSize(it.size)} → ${fmtSize(it.blob.size)} · ${it.kbps}k</span>`;
+        return `<span class="badge ok">완료 ${label}</span><span>${it.format} ${fmtSize(it.size)} → WebM ${fmtSize(it.blob.size)} · ${it.kbps}k</span>`;
       }
-      if (it.status === 'converting') return `<span class="badge run">변환 중</span><span>${fmtSize(it.size)}</span>`;
+      if (it.status === 'converting') return `<span class="badge run">변환 중</span><span>${it.format} · ${fmtSize(it.size)}</span>`;
       if (it.status === 'error') return `<span class="badge err">실패</span><span>${esc(it.error || '변환할 수 없는 파일')}</span>`;
-      return `<span class="badge">대기</span><span>${fmtSize(it.size)}</span>`;
+      return `<span class="badge">대기</span><span>${it.format} · ${fmtSize(it.size)}</span>`;
     }
 
     function renderList() {
@@ -593,14 +608,36 @@
       });
     }
 
-    async function decodeAt48k(file) {
+    function decodeError(format) {
+      return new Error(format === 'M4A'
+        ? '이 브라우저에서 열 수 없는 M4A (Safari·Chrome 최신 버전에서 다시 시도해 주세요)'
+        : `손상되었거나 지원하지 않는 ${format} 파일`);
+    }
+
+    async function decodeAt48k(it) {
       const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-      const off = new OAC(2, 48000, 48000);
-      return decodeWith(off, await file.arrayBuffer());
+      let buf;
+      try {
+        buf = await decodeWith(new OAC(2, 48000, 48000), await it.file.arrayBuffer());
+      } catch (e) {
+        throw decodeError(it.format);
+      }
+      if (buf.numberOfChannels <= 2) return buf;
+      // Multichannel WAV (5.1 etc.): downmix to stereo with the standard Web Audio speaker mix.
+      const mix = new OAC(2, buf.length, buf.sampleRate);
+      const src = mix.createBufferSource();
+      src.buffer = buf;
+      src.connect(mix.destination);
+      src.start();
+      return mix.startRendering ? await new Promise((resolve, reject) => {
+        mix.oncomplete = (e) => resolve(e.renderedBuffer);
+        const p = mix.startRendering();
+        if (p && p.then) p.then(resolve, reject);
+      }) : buf;
     }
 
     async function convertItem(it, bitrate, onProgress) {
-      const buf = await decodeAt48k(it.file);
+      const buf = await decodeAt48k(it);
       const channels = Math.min(2, buf.numberOfChannels);
       if (webCodecsOk === null || webCodecsOk) {
         webCodecsOk = await canUseWebCodecs(channels, bitrate);
@@ -703,7 +740,7 @@
     });
 
     /* ---------- Compare player ---------- */
-    const SRC_NAME = { orig: '원본 MP3', conv: 'WebM' };
+    const SRC_NAME = { orig: '원본', conv: 'WebM' };
     const player = {
       item: null, orig: null, conv: null, duration: 0,
       which: 'conv', playing: false, loop: false,
@@ -931,6 +968,8 @@
       Object.assign(player, { item: it, orig: null, conv: null, duration: 0, offset: 0 });
       $('player').classList.remove('hidden');
       $('pl-name').textContent = it.name;
+      SRC_NAME.orig = '원본 ' + it.format;
+      $('ab-orig-name').textContent = SRC_NAME.orig;
       $('ab-orig').textContent = fmtSize(it.size);
       $('ab-conv').textContent = `${fmtSize(it.blob.size)} · ${it.kbps}k`;
       $('cur').textContent = '0:00';
