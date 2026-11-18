@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>cnation Audio Compressor</title>
-  <meta name="description" content="MP3·WAV·M4A를 고효율 WebM(Opus)으로 일괄 변환하고 원본과 바로 비교해 들어보세요.">
+  <meta name="description" content="MP3·WAV·M4A를 WebM(Opus) 또는 MP3로 일괄 변환하고 원본과 바로 비교해 들어보세요.">
   <meta property="og:title" content="cnation Audio Compressor">
-  <meta property="og:description" content="MP3·WAV·M4A → WebM(Opus) 일괄 변환 · 원본 비교 듣기">
+  <meta property="og:description" content="MP3·WAV·M4A → WebM·MP3 일괄 변환 · 원본 비교 듣기">
   <meta name="theme-color" content="#0e131c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -78,9 +78,11 @@
     .btn:disabled { opacity: .35; }
 
     .label { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
-    .seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; background: #0f1520; border: 1px solid var(--line); border-radius: 14px; }
+    .seg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 4px; background: #0f1520; border: 1px solid var(--line); border-radius: 14px; }
     .seg button { height: 50px; padding: 0; border-radius: 10px; font-size: 14px; font-weight: 700; color: var(--muted); line-height: 1.15; }
     .seg button small { display: block; font-size: 10.5px; font-weight: 600; opacity: .8; }
+    .seg.two { grid-template-columns: 1fr 1fr; }
+    .label.gap { margin-top: 14px; }
     .seg button.on { background: var(--accent); color: var(--accent-ink); }
     .hint { margin: 8px 2px 0; font-size: 12.5px; color: var(--muted); }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
@@ -193,7 +195,7 @@
       <img src="favicon.png" alt="">
       <div>
         <h1>cnation <em>Audio Compressor</em></h1>
-        <p>MP3 · WAV · M4A → WebM 변환 · 비교 듣기</p>
+        <p>MP3 · WAV · M4A → WebM · MP3 변환 · 비교 듣기</p>
       </div>
     </header>
 
@@ -208,13 +210,19 @@
       </section>
 
       <section class="card">
-        <div class="label">WebM 음질</div>
+        <div class="label">출력 형식</div>
+        <div class="seg two" id="formats">
+          <button data-fmt="webm">WebM<small>Opus · 용량 최소</small></button>
+          <button data-fmt="mp3">MP3<small>모든 기기 호환</small></button>
+        </div>
+        <div class="label gap">음질</div>
         <div class="seg" id="bitrates">
-          <button data-kbps="32">32k<small>초경량</small></button>
-          <button data-kbps="48">48k<small>경량</small></button>
-          <button data-kbps="64">64k<small>기본</small></button>
-          <button data-kbps="96">96k<small>고음질</small></button>
-          <button data-kbps="128">128k<small>최고</small></button>
+          <button data-kbps="32">32k<small></small></button>
+          <button data-kbps="48">48k<small></small></button>
+          <button data-kbps="64">64k<small></small></button>
+          <button data-kbps="96">96k<small></small></button>
+          <button data-kbps="128">128k<small></small></button>
+          <button data-kbps="192">192k<small></small></button>
         </div>
         <p class="hint" id="br-hint"></p>
         <div class="actions">
@@ -260,7 +268,7 @@
 
         <div class="ab" id="ab">
           <button data-src="orig"><b id="ab-orig-name">원본</b><small id="ab-orig"></small></button>
-          <button data-src="conv" class="on"><b>WebM</b><small id="ab-conv"></small></button>
+          <button data-src="conv" class="on"><b id="ab-conv-name">WebM</b><small id="ab-conv"></small></button>
         </div>
 
         <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="재생 위치">
@@ -294,18 +302,41 @@
     'use strict';
 
     const $ = (id) => document.getElementById(id);
-    const BITRATES = {
-      32: '초경량 · 단순한 곡이나 용량이 가장 중요할 때',
-      48: '경량 · 용량을 더 줄이고 싶을 때 (고음에서 약간의 잡음)',
-      64: '모바일 게임 BGM 기본 · 잡음 없이 깔끔한 음질 · 권장',
-      96: '고음질 · 원본과 구분하기 어려움',
-      128: '최고 음질 · 용량 절감 효과는 작음'
+    // Output formats. MP3 needs roughly twice the bitrate of Opus for the same quality,
+    // so each format has its own labels, hints and default bitrate.
+    const FORMATS = {
+      webm: {
+        label: 'WebM', ext: 'webm', defaultKbps: 64,
+        tags: { 32: '초경량', 48: '경량', 64: '기본', 96: '고음질', 128: '최고', 192: '원본급' },
+        hints: {
+          32: '초경량 · 단순한 곡이나 용량이 가장 중요할 때',
+          48: '경량 · 용량을 더 줄이고 싶을 때 (고음에서 약간의 잡음)',
+          64: '모바일 게임 BGM 기본 · 잡음 없이 깔끔한 음질 · 권장',
+          96: '고음질 · 원본과 구분하기 어려움',
+          128: '최고 음질 · 대부분 원본과 동일하게 들림',
+          192: '원본급 · 용량 절감 효과는 작음'
+        }
+      },
+      mp3: {
+        label: 'MP3', ext: 'mp3', defaultKbps: 128,
+        tags: { 32: '음성용', 48: '음성용', 64: '초경량', 96: '경량', 128: '기본', 192: '고음질' },
+        hints: {
+          32: '음성·효과음용 · 음악은 음질 저하가 큼',
+          48: '음성·효과음용 · 음악은 잡음이 큼',
+          64: '초경량 · 음악은 잡음이 들릴 수 있음',
+          96: '경량 · 가벼운 BGM용',
+          128: 'MP3 기본 · 모든 기기 호환 · 권장',
+          192: '고음질 · 원본과 구분하기 어려움'
+        }
+      }
     };
     const ICON_PLAY = '<path d="M8 5.5v13a1 1 0 001.5.86l10.5-6.5a1 1 0 000-1.72L9.5 4.64A1 1 0 008 5.5z"/>';
     const ICON_PAUSE = '<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>';
     const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
-    let kbps = 64;
+    let format = 'webm';
+    const kbpsByFormat = { webm: FORMATS.webm.defaultKbps, mp3: FORMATS.mp3.defaultKbps };
+    let kbps = kbpsByFormat[format];
     let items = [];
     let converting = false;
 
@@ -366,18 +397,31 @@
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
 
-    /* ---------- Bitrate selector ---------- */
+    /* ---------- Format & bitrate selectors ---------- */
     function renderBitrate() {
+      const f = FORMATS[format];
+      document.querySelectorAll('#formats button').forEach((b) => b.classList.toggle('on', b.dataset.fmt === format));
       document.querySelectorAll('#bitrates button').forEach((b) => {
-        b.classList.toggle('on', Number(b.dataset.kbps) === kbps);
+        const k = Number(b.dataset.kbps);
+        b.classList.toggle('on', k === kbps);
+        b.querySelector('small').textContent = f.tags[k];
       });
-      $('br-hint').textContent = BITRATES[kbps];
+      $('br-hint').textContent = f.hints[kbps];
       updateButtons();
     }
+    $('formats').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b || converting) return;
+      kbpsByFormat[format] = kbps;
+      format = b.dataset.fmt;
+      kbps = kbpsByFormat[format];
+      renderBitrate();
+    });
     $('bitrates').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (!b || converting) return;
       kbps = Number(b.dataset.kbps);
+      kbpsByFormat[format] = kbps;
       renderBitrate();
     });
 
@@ -453,7 +497,7 @@
       if (it.status === 'done') {
         const diff = Math.round((1 - it.blob.size / it.size) * 100);
         const label = diff >= 0 ? '-' + diff + '%' : '+' + Math.abs(diff) + '%';
-        return `<span class="badge ok">완료 ${label}</span><span>${it.format} ${fmtSize(it.size)} → WebM ${fmtSize(it.blob.size)} · ${it.kbps}k</span>`;
+        return `<span class="badge ok">완료 ${label}</span><span>${it.format} ${fmtSize(it.size)} → ${FORMATS[it.outFormat].label} ${fmtSize(it.blob.size)} · ${it.kbps}k</span>`;
       }
       if (it.status === 'converting') return `<span class="badge run">변환 중</span><span>${it.format} · ${fmtSize(it.size)}</span>`;
       if (it.status === 'error') return `<span class="badge err">실패</span><span>${esc(it.error || '변환할 수 없는 파일')}</span>`;
@@ -480,7 +524,7 @@
             </button>
             <a class="btn soft" href="${it.url}" download="${esc(it.outName)}" style="text-decoration:none">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
-              WebM
+              ${FORMATS[it.outFormat].label}
             </a>
           </div>` : ''}
         </div>`).join('');
@@ -496,7 +540,7 @@
     });
 
     function pending() {
-      return items.filter((it) => it.status !== 'done' || it.kbps !== kbps);
+      return items.filter((it) => it.status !== 'done' || it.kbps !== kbps || it.outFormat !== format);
     }
 
     function updateButtons() {
@@ -636,8 +680,65 @@
       }) : buf;
     }
 
-    async function convertItem(it, bitrate, onProgress) {
+    // MP3 encoding (lamejs) runs in a worker so the page stays responsive.
+    const MP3_WORKER_SRC = `
+      self.onmessage = (e) => {
+        const { lameUrl, channels, sampleRate, kbps, left, right } = e.data;
+        try {
+          importScripts(lameUrl);
+          const enc = new lamejs.Mp3Encoder(channels, sampleRate, kbps);
+          const toI16 = (f) => {
+            const o = new Int16Array(f.length);
+            for (let i = 0; i < f.length; i++) {
+              const v = f[i] < -1 ? -1 : f[i] > 1 ? 1 : f[i];
+              o[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+            }
+            return o;
+          };
+          const L = toI16(left);
+          const R = right ? toI16(right) : null;
+          const BLOCK = 1152 * 32;
+          const parts = [];
+          let last = 0;
+          for (let i = 0; i < L.length; i += BLOCK) {
+            const out = R ? enc.encodeBuffer(L.subarray(i, i + BLOCK), R.subarray(i, i + BLOCK))
+                          : enc.encodeBuffer(L.subarray(i, i + BLOCK));
+            if (out.length) parts.push(new Uint8Array(out.buffer, out.byteOffset, out.byteLength));
+            const p = i / L.length;
+            if (p - last > 0.02) { last = p; self.postMessage({ progress: p }); }
+          }
+          const end = enc.flush();
+          if (end.length) parts.push(new Uint8Array(end.buffer, end.byteOffset, end.byteLength));
+          self.postMessage({ blob: new Blob(parts, { type: 'audio/mpeg' }) });
+        } catch (err) {
+          self.postMessage({ error: String((err && err.message) || err) });
+        }
+      };`;
+    let mp3WorkerUrl = null;
+    function encodeMp3(buf, kbpsValue, onProgress) {
+      return new Promise((resolve, reject) => {
+        if (!mp3WorkerUrl) mp3WorkerUrl = URL.createObjectURL(new Blob([MP3_WORKER_SRC], { type: 'text/javascript' }));
+        const worker = new Worker(mp3WorkerUrl);
+        const channels = Math.min(2, buf.numberOfChannels);
+        worker.onmessage = (e) => {
+          const d = e.data;
+          if (d.progress !== undefined) return onProgress(d.progress);
+          worker.terminate();
+          if (d.blob) { onProgress(1); resolve(d.blob); } else reject(new Error('MP3 인코딩 실패'));
+        };
+        worker.onerror = () => { worker.terminate(); reject(new Error('MP3 인코딩 실패')); };
+        worker.postMessage({
+          lameUrl: new URL('vendor/lame.min.js', location.href).href,
+          channels, sampleRate: buf.sampleRate, kbps: kbpsValue,
+          left: buf.getChannelData(0),
+          right: channels > 1 ? buf.getChannelData(1) : null
+        });
+      });
+    }
+
+    async function convertItem(it, bitrate, onProgress, outFormat) {
       const buf = await decodeAt48k(it);
+      if (outFormat === 'mp3') return encodeMp3(buf, bitrate / 1000, onProgress);
       const channels = Math.min(2, buf.numberOfChannels);
       if (webCodecsOk === null || webCodecsOk) {
         webCodecsOk = await canUseWebCodecs(channels, bitrate);
@@ -661,6 +762,7 @@
 
       converting = true;
       const bitrateKbps = kbps;
+      const outFormat = format;
       const prog = $('progress');
       const bar = $('progress-bar');
       const text = $('progress-text');
@@ -692,12 +794,13 @@
             const mini = $('mini-' + it.id);
             if (mini) mini.style.width = Math.round(p * 100) + '%';
             setOverall(i, p);
-          });
+          }, outFormat);
           if (!blob.size) throw new Error('빈 결과');
           it.blob = blob;
           it.url = URL.createObjectURL(blob);
-          it.outName = `${baseName(it.name)}_${bitrateKbps}k.webm`;
+          it.outName = `${baseName(it.name)}_${bitrateKbps}k.${FORMATS[outFormat].ext}`;
           it.kbps = bitrateKbps;
+          it.outFormat = outFormat;
           it.status = 'done';
           ok++;
         } catch (err) {
@@ -725,12 +828,12 @@
         const used = new Set();
         done.forEach((it) => {
           let name = it.outName;
-          for (let n = 2; used.has(name); n++) name = it.outName.replace(/\.webm$/, ` (${n}).webm`);
+          for (let n = 2; used.has(name); n++) name = it.outName.replace(/(\.[^.]+)$/, ` (${n})$1`);
           used.add(name);
           zip.file(name, it.blob);
         });
         const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
-        download(blob, `cnation_webm_${done.length}files.zip`);
+        download(blob, `cnation_audio_${done.length}files.zip`);
       } catch (e) {
         console.error(e);
         toast('ZIP을 만들지 못했어요');
@@ -971,6 +1074,8 @@
       SRC_NAME.orig = '원본 ' + it.format;
       $('ab-orig-name').textContent = SRC_NAME.orig;
       $('ab-orig').textContent = fmtSize(it.size);
+      SRC_NAME.conv = FORMATS[it.outFormat].label;
+      $('ab-conv-name').textContent = SRC_NAME.conv;
       $('ab-conv').textContent = `${fmtSize(it.blob.size)} · ${it.kbps}k`;
       $('cur').textContent = '0:00';
       $('dur').textContent = '…';
@@ -995,7 +1100,7 @@
       } catch (e) {
         console.error(e);
         if (token !== player.token) return;
-        toast('이 브라우저에서는 WebM을 재생할 수 없어요');
+        toast(`이 브라우저에서는 ${SRC_NAME.conv}를 재생할 수 없어요`);
         closePlayer();
       }
     }
